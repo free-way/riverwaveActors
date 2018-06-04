@@ -13,164 +13,203 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-var (
-	err error
-)
 type ActorsService struct {
-
 }
 
-func (ActorsService) GetAllUsers(ctx context.Context,empty *definitions.Empty) (*definitions.GetAllUsersResponse,error)  {
+func (ActorsService) GetAllUsers(ctx context.Context, empty *definitions.Empty) (*definitions.GetAllUsersResponse, error) {
+	var err = errors.New("something went wrong")
 	users := []models.User{}
 	var resUser []*definitions.User
-	if err = utils.Db.Find(&users).Error; err != nil{
+	if err = utils.Db.Find(&users).Error; err != nil {
 		fmt.Printf(err.Error())
 		goto ErrorOccurred
 	}
-	if err = copier.Copy(&resUser,&users); err != nil{
+	if err = copier.Copy(&resUser, &users); err != nil {
 		goto ErrorOccurred
 	}
 
 	return &definitions.GetAllUsersResponse{
-		Status: 0,
+		Status:  0,
 		Message: "Success",
-		Users:resUser,
-	},nil
+		Users:   resUser,
+	}, nil
 
-	ErrorOccurred:
-		return  &definitions.GetAllUsersResponse{
-			Status: -1,
-			Message: "Error Occured",
-		},err
+ErrorOccurred:
+	return &definitions.GetAllUsersResponse{
+		Status:  -1,
+		Message: "Error Occured",
+	}, err
 }
 
-func (ActorsService) CreateUser(ctx context.Context, request *definitions.CreateUserRequest) (*definitions.GeneralResponse,error)  {
+func (ActorsService) CreateUser(ctx context.Context, request *definitions.CreateUserRequest) (*definitions.GeneralResponse, error) {
+	var err = errors.New("something went wrong")
 	var user models.User
 	var role models.Role
 	var pswdByte []byte
-	if err = copier.Copy(&user,request); err != nil{
+	if err = copier.Copy(&user, request); err != nil {
 		goto ErrorOccurred
 	}
-	if err = user.Validation(); err != nil{
+	if err = user.Validation(); err != nil {
 		goto ErrorOccurred
 	}
 
 	//encrypt password
-	pswdByte,err = bcrypt.GenerateFromPassword([]byte(user.Password),bcrypt.MinCost)
+	pswdByte, err = bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)
 	user.Password = string(pswdByte)
-	if request.RoleID > 0{
-		 if err = utils.Db.Where("ID = ?",request.RoleID).Find(&role).Error; err != nil{
+	if request.RoleID > 0 {
+		if err = utils.Db.Where("ID = ?", request.RoleID).Find(&role).Error; err != nil {
 			goto ErrorOccurred
 		}
 	}
-	if err = utils.Db.Create(&user).Error; err != nil{
+	if err = utils.Db.Create(&user).Error; err != nil {
 		goto ErrorOccurred
 	}
 	return &definitions.GeneralResponse{
-		Status:0,
-		Message:"Success",
-	},nil
+		Status:  0,
+		Message: "Success",
+	}, nil
 
-
-	ErrorOccurred:
-		return  &definitions.GeneralResponse{
-			Status:-1,
-			Message: "Error Occurred",
-		},err
+ErrorOccurred:
+	return &definitions.GeneralResponse{
+		Status:  -1,
+		Message: "Error Occurred",
+	}, err
 }
 
-func (ActorsService) EditUser(ctx context.Context, request *definitions.EditUserRequest) (*definitions.GeneralResponse,error){
+func (ActorsService) EditUser(ctx context.Context, request *definitions.EditUserRequest) (*definitions.GeneralResponse, error) {
+	var err = errors.New("something went wrong")
 	var user models.User
 	var payload map[string]interface{}
 	var role models.Role
-	if err = copier.Copy(&user,request); err != nil{
+	if err = copier.Copy(&user, request); err != nil {
 		goto ErrorOccurred
 	}
-	if err = user.Validation(); err != nil{
+	if err = user.Validation(); err != nil {
 		goto ErrorOccurred
 	}
-	if request.RoleID != 0{
-		if err = utils.Db.Where("ID = ?",request.RoleID).Find(&role).Error; err != nil{
+	if request.RoleID != 0 {
+		if err = utils.Db.Where("ID = ?", request.RoleID).Find(&role).Error; err != nil {
 			goto ErrorOccurred
 		}
 	}
-	if request.ID < 1{
+	if request.ID < 1 {
 		err = errors.New("ID can not be null")
 		goto ErrorOccurred
-	}else{
+	} else {
 		payload = structs.Map(&user)
-		if err = utils.Db.Find(&user).Error; err != nil{
+		if err = utils.Db.Find(&user).Error; err != nil {
 			goto ErrorOccurred
-		}else{
+		} else {
 
-			if err = utils.Db.Model(&user).Omit("password").Update(payload).Error; err != nil{
+			if err = utils.Db.Model(&user).Omit("password").Update(payload).Error; err != nil {
 				goto ErrorOccurred
 			}
 		}
 	}
 	return &definitions.GeneralResponse{
-		Status:0,
-		Message:"Success",
-	},nil
+		Status:  0,
+		Message: "Success",
+	}, nil
 
 ErrorOccurred:
-	return  &definitions.GeneralResponse{
-		Status:-1,
+	return &definitions.GeneralResponse{
+		Status:  -1,
 		Message: "Error Occurred",
-	},err
+	}, err
 }
 
-func (ActorsService) DeleteUser(ctx context.Context, request *definitions.DeleteUserRequest) (*definitions.GeneralResponse,error){
+func (ActorsService) DeleteUser(ctx context.Context, request *definitions.DeleteUserRequest) (*definitions.GeneralResponse, error) {
+	var err = errors.New("something went wrong")
 	var user models.User
-	if err = utils.Db.Where("ID = ?",request.UserID).Find(&user).Error; err != nil {
+	if err = utils.Db.Where("ID = ?", request.UserID).Find(&user).Error; err != nil {
 		goto ErrorOccurred
 	}
-	if err = utils.Db.Delete(&user).Where("ID = ?",request.UserID).Error; err != nil{
+	if err = utils.Db.Delete(&user).Where("ID = ?", request.UserID).Error; err != nil {
 		goto ErrorOccurred
 	}
 	return &definitions.GeneralResponse{
-		Status:0,
-		Message:"Success",
-	},nil
+		Status:  0,
+		Message: "Success",
+	}, nil
 ErrorOccurred:
-	return  &definitions.GeneralResponse{
-		Status:-1,
+	return &definitions.GeneralResponse{
+		Status:  -1,
 		Message: "Error Occurred",
-	},err
+	}, err
 }
 
-func (ActorsService) Authenticate(ctx context.Context, request *definitions.AuthenticationParams) (*definitions.GeneralResponse,error){
+func (ActorsService) Authenticate(ctx context.Context, request *definitions.AuthenticationParams) (*definitions.GeneralResponse, error) {
+	var err = errors.New("something went wrong")
 	user := models.User{}
 	token := &jwt.Token{}
 	var tokenString string
-	if utils.Db.Where("Email = ?",request.Email).Find(&user).RecordNotFound(){
+	if utils.Db.Where("Email = ?", request.Email).Find(&user).RecordNotFound() {
 		errors.New("email not found")
 		goto ErrorOccurred
 	}
-	if err = bcrypt.CompareHashAndPassword([]byte(user.Password),[]byte(request.Password)); err != nil{
+	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
 		errors.New("password does not match")
 		goto ErrorOccurred
 	}
-	token = jwt.NewWithClaims(jwt.SigningMethodHS256,jwt.MapClaims{
-		"id":user.ID,
-		"first_name":user.FirstName,
-		"last_name": user.LastName,
-		"email":user.Email,
-		"role_id": user.RoleID,
-
+	token = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":         user.ID,
+		"first_name": user.FirstName,
+		"last_name":  user.LastName,
+		"email":      user.Email,
+		"role_id":    user.RoleID,
 	})
-	tokenString,err = token.SignedString([]byte("riverwave"))
-	if err != nil{
+	tokenString, err = token.SignedString([]byte("riverwave"))
+	if err != nil {
 		goto ErrorOccurred
 	}
 	return &definitions.GeneralResponse{
-		Status:0,
-		Message:tokenString,
-	},nil
+		Status:  0,
+		Message: tokenString,
+	}, nil
 
 ErrorOccurred:
-	return  &definitions.GeneralResponse{
-		Status:-1,
+	return &definitions.GeneralResponse{
+		Status:  -1,
 		Message: "Error Occurred",
-	},err
+	}, err
+}
+
+func (ActorsService) ValidateToken(ctx context.Context, req *definitions.LoginParams) (*definitions.LoginResponse, error) {
+	var err = errors.New("something went wrong")
+	if req.Token == "" {
+		err = errors.New("token not provided")
+		return &definitions.LoginResponse{
+			IsValid: false,
+		}, err
+	}
+
+	token, err := jwt.Parse(req.Token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte("riverwave"), nil
+	})
+	if err != nil {
+		return &definitions.LoginResponse{
+			IsValid: false,
+		}, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		user := models.User{}
+		if utils.Db.Where("Email = ? and id = ?", claims["email"], claims["id"]).Find(&user).RecordNotFound() {
+			err = errors.New("could not find user with such email and id")
+			return &definitions.LoginResponse{
+				IsValid: false,
+			}, err
+		}
+		return &definitions.LoginResponse{
+			IsValid: true,
+		}, nil
+	}
+	err = errors.New("could not fetch claims from payload")
+	return &definitions.LoginResponse{
+		IsValid: false,
+	}, err
+
 }

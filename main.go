@@ -32,8 +32,13 @@ func init(){
 		//os.Exit(-1)
 	}
 	connectionString := cfg.Section("Database").Key("conn").String()
+	enableLogger,err := cfg.Section("Logger").Key("enable_logs").Bool()
+	if err != nil{
+		fmt.Printf(err.Error())
+	}
 	//connect to the database
 	utils.Db, err = gorm.Open("mysql", connectionString)
+	utils.Db.LogMode(enableLogger)
 	if err != nil {
 		fmt.Println("Error While trying to connect to the database: ", err.Error())
 		os.Exit(1)
