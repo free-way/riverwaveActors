@@ -23,7 +23,7 @@
   branch = "master"
   name = "github.com/free-way/riverwaveCommon"
   packages = ["definitions"]
-  revision = "e96e82999fe8d3a45d32146c32ac951029a14bd3"
+  revision = "029f48a0181dc101f432e09e9b988036fbb0b769"
 
 [[projects]]
   name = "github.com/go-ozzo/ozzo-validation"

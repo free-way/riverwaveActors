@@ -57,6 +57,7 @@ func main() {
 	service := grpc.NewServer()
 	definitions.RegisterActorsServiceServer(service, services.ActorsService{})
 	definitions.RegisterAuthorizationServiceServer(service, services.AuthorizationService{})
+	definitions.RegisterResourcesServer(service,services.Resources{})
 
 	if err := service.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
