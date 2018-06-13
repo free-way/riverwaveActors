@@ -5,15 +5,12 @@ import (
 	"gopkg.in/ini.v1"
 	"fmt"
 	"os"
-	"net"
-	"google.golang.org/grpc"
-	"github.com/free-way/riverwaveCommon/definitions"
-	"github.com/free-way/riverwaveActors/services"
-	"log"
 	"flag"
 	"github.com/free-way/riverwaveActors/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/free-way/riverwaveActors/models"
+	"github.com/gin-gonic/gin"
+	"github.com/free-way/riverwaveActors/services"
 )
 
 
@@ -47,20 +44,23 @@ func init(){
 }
 
 func main() {
+	r := gin.Default()
+	v1 := r.Group("/api/v1")
+	{
+		v1.GET("/users",services.GetAllUsers)
+		v1.POST("/users",services.CreateUser)
+		v1.PUT("/users/:user",services.EditUser)
+		v1.DELETE("/users/:user",services.DeleteUser)
+		v1.POST("/authenticate",services.Authenticate)
+		v1.POST("/validate-token",services.ValidateToken)
 
-	//create grpc server
-	listener, err := net.Listen("tcp", cfg.Section("Microservice").Key("port").String())
-	if err != nil {
-		fmt.Println("Can not listen on port")
-		os.Exit(-1)
+		v1.GET("/resources",services.GetResources)
+		v1.POST("/resources",services.AddResource)
+		v1.PUT("/resources/:resource",services.EditResource)
+		v1.DELETE("/resources/:resource",services.DeleteResource)
 	}
-	service := grpc.NewServer()
-	definitions.RegisterActorsServiceServer(service, services.ActorsService{})
-	definitions.RegisterAuthorizationServiceServer(service, services.AuthorizationService{})
-	definitions.RegisterResourcesServer(service,services.Resources{})
 
-	if err := service.Serve(listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	r.Run(cfg.Section("Microservice").Key("port").String())
+
 
 }

@@ -1,95 +1,70 @@
 package services
 
 import (
-	"context"
-	"github.com/free-way/riverwaveCommon/definitions"
 	"github.com/free-way/riverwaveActors/models"
 	"github.com/free-way/riverwaveActors/utils"
-	"github.com/jinzhu/copier"
-	"errors"
+	"github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
 )
 
-type Resources struct {
 
-}
-
-func (Resources) GetResources(ctx context.Context,empty *definitions.Empty) (*definitions.ResourcesResponse,error){
+func GetResources(ctx *gin.Context){
 	var resources []*models.Resource
-	var err error
-	var res definitions.ResourcesResponse
-	err = utils.Db.Find(&resources).Error
-	if err != nil{
-		return &definitions.ResourcesResponse{
-			Message:err.Error(),
-			Status: -1,
-		},err
-	}
-	copier.Copy(&res.Resources,&resources)
-	return &res,nil
+	utils.Db.Find(&resources)
+	ctx.JSON(http.StatusOK,resources)
 
 }
 
-func (Resources) AddResource(ctx context.Context, req *definitions.CreateResourceParams)(*definitions.GeneralResponse,error)  {
+func AddResource(ctx *gin.Context) {
 	var resource models.Resource
-	var err error
-	resource.Name = req.Name
-	resource.Path = req.Path
+	ctx.BindJSON(&resource)
+
 	if err = resource.Validate(); err != nil{
-		return &definitions.GeneralResponse{
-			Message:err.Error(),
-			Status: -1,
-		},err
+		ctx.JSON(http.StatusBadRequest, map[string]string{
+			"Errors": err.Error(),
+		})
+		ctx.Abort()
+		return
 	}
 	if err = utils.Db.Create(&resource).Error; err != nil{
-		return &definitions.GeneralResponse{
-			Message:err.Error(),
-			Status: -1,
-		},err
+		ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"Error": err.Error(),
+		})
+		ctx.Abort()
+		return
 	}
-	return &definitions.GeneralResponse{
-		Message:"Success",
-		Status: 0,
-	},nil
+	ctx.JSON(http.StatusOK,resource)
 }
 
-func (Resources) EditResource(ctx context.Context, req *definitions.EditResourceParams)(*definitions.GeneralResponse,error)  {
+func  EditResource(ctx *gin.Context) {
+	resourceId,_ := strconv.Atoi(ctx.Param("resource"))
+	var payload map[string]interface{}
 	var resource models.Resource
-	var err error
-	if utils.Db.Where("id = ?",req.ResourceId).Find(&resource).RecordNotFound(){
-		err = errors.New("record not found")
-		return &definitions.GeneralResponse{
-			Message:err.Error(),
-			Status: -1,
-		},nil
+	ctx.BindJSON(&payload)
+	if utils.Db.Where("id = ?",resourceId).Find(&resource).RecordNotFound(){
+		ctx.JSON(http.StatusNotFound, map[string]string{
+			"Error": "Resource Not Found",
+		})
+		ctx.Abort()
+		return
 	}
-	resource.Path = req.Path
-	resource.Name = req.Name
-	if err = resource.Validate(); err != nil{
-		return &definitions.GeneralResponse{
-			Message: err.Error(),
-			Status: -1,
-		},err
-	}
-	utils.Db.Save(&resource)
-	return &definitions.GeneralResponse{
-		Message:"Success",
-		Status: 0,
-	},nil
+	utils.Db.Model(&resource).Update(payload)
+	ctx.JSON(http.StatusOK,resource)
 }
 
-func (Resources) DeleteResource(ctx context.Context, req *definitions.DeleteResourceParams)(*definitions.GeneralResponse,error){
+func  DeleteResource(ctx *gin.Context){
+	resourceId,_ := strconv.Atoi(ctx.Param("resource"))
 	var resource models.Resource
-	var err error
-	if utils.Db.Where("id = ?",req.ResourceId).Find(&resource).RecordNotFound(){
-		err = errors.New("record not found")
-		return &definitions.GeneralResponse{
-			Message:err.Error(),
-			Status: -1,
-		},nil
+	if utils.Db.Where("id = ?",resourceId).Find(&resource).RecordNotFound(){
+		ctx.JSON(http.StatusNotFound, map[string]string{
+			"Error": "Resource Not Found",
+		})
+		ctx.Abort()
+		return
 	}
 	utils.Db.Delete(&resource)
-	return &definitions.GeneralResponse{
-		Message:"Success",
-		Status: -1,
-	},nil
+	ctx.JSON(http.StatusOK,map[string]string{
+		"Message":"Resource Deleted",
+	})
 }

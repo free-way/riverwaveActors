@@ -7,9 +7,8 @@ import (
 
 type Resource struct {
 	gorm.Model
-	//ID uint `gorm:"primary_key"`
-	Name string
-	Path string
+	Name string `json:"name"`
+	Path string `json:"path"`
 }
 
 type ResourcePermission struct {

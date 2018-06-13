@@ -9,13 +9,12 @@ import (
 
 type User struct {
 	gorm.Model
-	//ID        uint `gorm:"primary_key"`
-	FirstName string
-	LastName  string
-	Email     string `gorm:"unique_index"`
-	Password  string
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `gorm:"unique_index";json:"email"`
+	Password  string `json:"password"`
 	Role   Role `gorm:"foreignkey:RoleID"`
-	RoleID uint
+	RoleID uint `json:"role_id"`
 }
 
 func (User) TableName() string {
@@ -27,5 +26,6 @@ func (user User) Validation() error {
 		validation.Field(&user.LastName, validation.Required,validation.Length(3,50)),
 		validation.Field(&user.Email, validation.Required,is.Email),
 		validation.Field(&user.Password,validation.Required,),
+		validation.Field(&user.RoleID,validation.Required),
 	)
 }
